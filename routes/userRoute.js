@@ -8,13 +8,17 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/:phone', async (req, res) => {
-  const user = await User.findOne({ phone: req.params.phone.trim() });
+  console.log("********* Params **************");
+
+  console.log(req.params);
+
+  const user = await User.findOne({ phone: req.params.phone });
 
   res.json(user);
 });
 
 router.post('/', async (req, res) => {
-  const foundUser = await User.findOne({ phone: req.body.phone.trim() })
+  const foundUser = await User.findOne({ phone: req.body.phone })
   if (!foundUser) {
     const user = new User({
       phone: req.body.phone,
