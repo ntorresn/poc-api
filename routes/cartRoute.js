@@ -7,9 +7,11 @@ const mongoose = require('mongoose');
 
 
 
-router.get('/:id', async (req, res) => {
-  const cart = await Cart.findById(req.params.id);
-  res.send(cart);
+router.get('/:phone', async (req, res) => {
+  let user = await User.findOne({ phone: req.params.phone })
+  let cart = await Cart.findOne({ user: user._id }).populate('products')
+
+  res.json(cart);
 });
 
 router.post('/', async (req, res) => {
@@ -41,58 +43,79 @@ router.put('/:id', async (req, res) => {
 });
 router.put('/add-product/:id', async (req, res) => {
 
+  console.log("**************************");
+  console.log(req.body);
+  console.log("**************************");
+
+  var messageResponse = 'Producto agragado exitosamente'
+  var statusResponse = 'success'
+
   let product = await Product.findOne({ id: req.body.id });
+  let user = await User.findOne({ phone: req.body.phone })
+  let cart = await Cart.findOne({ user: user._id })
+
   if (!product) {
     product = new Product({
       id: req.body.id,
       name: req.body.name,
       quantity: req.body.quantity,
+      price: req.body.price,
     });
 
     await product.save().catch((err) => {
       console.log(err);
     });
+    if (cart) {
+      Cart.updateOne({ _id: cart._id }, {
+        $push: { products: product._id }
+      }, {
+        multi: true
+      }).exec();
+    } else {
+      statusResponse = 'error'
+      messageResponse = 'No se encontro carrito de compras para el usuario actual'
+    }
+  } else {
+    await Product.findByIdAndUpdate(
+      product._id,
+      { $inc: { quantity: req.body.quantity } },
+      { new: true }
+    )
   }
 
-  console.log(req.params);
+  res.json({ "status": statusResponse, "message": messageResponse });
 
-
-  Cart.updateOne({ _id: req.params.id }, {
-    $push: { products: product._id }
-  }, {
-    multi: true
-  }).exec();
-
-  let cart = Cart
-    .findById(req.params.id)
-    .populate('products')
-
-
-  res.json({ status: 'success' });
 });
-router.put('/remove-product/:id', async (req, res) => {
+router.put('/remove-product/:idproduct', async (req, res) => {
 
   console.log(req.body);
 
+  let product = await Product.findOne({ id: req.params.idproduct })
+  let user = await User.findOne({ phone: req.body.phone })
+  let cart = await Cart.findOne({ user: user._id })
 
-  Cart.updateOne({ _id: req.params.id }, {
-    $pull: { products: req.body.product }
-  }, {
-    multi: true
-  }).exec();
-
-
-  let cart = Cart
-    .findById(req.params.id)
-    .populate('products')
-
-
-  res.json({ status: 'success' });
+  if (cart) {
+    Cart.updateOne({ _id: cart._id }, {
+      $pull: { products: product._id }
+    }, {
+      multi: true
+    }).exec();
+    res.json({ status: 'success' });
+  } else {
+    res.json({ status: 'error' });
+  }
 });
 
-router.delete('/:id', async (req, res) => {
-  await Cart.findByIdAndDelete(req.params.id);
-  res.send('Carrito eliminado');
+router.delete('/:phone', async (req, res) => {
+  let user = await User.findOne({ phone: req.params.phone })
+  let cart = await Cart.findOne({ user: user._id })
+
+  if (cart) {
+    await Cart.findByIdAndDelete(cart._id);
+    res.json({ 'status': 'success', 'message': 'Carrito eliminado' });
+  } else {
+    res.json({ 'status': 'error', 'message': 'Carrito no encontrado' });
+  }
 });
 
 module.exports = router;
