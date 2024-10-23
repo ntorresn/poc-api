@@ -3,7 +3,6 @@ const router = express.Router();
 const Cart = require('../models/cart');
 const User = require('../models/user');
 const Product = require('../models/product');
-const mongoose = require('mongoose');
 
 
 
@@ -32,14 +31,32 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
-  const cart = await Cart.findByIdAndUpdate(req.params.id, {
-    user: req.body.user,
-    date: new Date(),
-    products: []
+router.put('/edit-product/:idproduct', async (req, res) => {
 
-  }, { new: true });
-  res.send(cart);
+  var messageResponse = 'Producto actulizado exitosamente'
+  var statusResponse = 'success'
+
+
+  console.log("........................ ***********************");
+  console.log(req.body);
+  console.log("........................ ***********************");
+
+  let product = await Product.findOne({ id: req.params.idproduct });
+
+  if (product) {
+    Product.updateOne({ _id: product._id }, {
+      $set: { quantity: req.body.quantity }
+    }, {
+      multi: true
+    }).exec();
+  } else {
+    statusResponse = 'error'
+    messageResponse = 'No se encontro el producto en el carrito'
+  }
+
+
+  res.json({ "status": statusResponse, "message": messageResponse });
+
 });
 router.put('/add-product/:id', async (req, res) => {
 
@@ -47,7 +64,7 @@ router.put('/add-product/:id', async (req, res) => {
   console.log(req.body);
   console.log("**************************");
 
-  var messageResponse = 'Producto agragado exitosamente'
+  var messageResponse = 'Producto agregado exitosamente'
   var statusResponse = 'success'
 
   let product = await Product.findOne({ id: req.body.id });
