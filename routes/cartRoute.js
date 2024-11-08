@@ -51,7 +51,7 @@ router.put('/edit-product/:idproduct', async (req, res) => {
     }).exec();
   } else {
     statusResponse = 'error'
-    messageResponse = 'No se encontro el producto en el carrito'
+    messageResponse = 'No se encontró el producto en el carrito'
   }
 
 
@@ -128,7 +128,8 @@ router.delete('/:phone', async (req, res) => {
   let cart = await Cart.findOne({ user: user._id })
 
   if (cart) {
-    await Cart.findByIdAndDelete(cart._id);
+    await Cart.findByIdAndUpdate(cart._id, { products: [] });
+    await Product.deleteMany({});
     res.json({ 'status': 'success', 'message': 'Carrito eliminado' });
   } else {
     res.json({ 'status': 'error', 'message': 'Carrito no encontrado' });
